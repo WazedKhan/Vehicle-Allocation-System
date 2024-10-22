@@ -5,6 +5,8 @@ from apps.models.driver import DriverCreateRequest
 from apps.database.config import DBCollections
 from bson import ObjectId
 
+from apps.utils.db_helpers import convert_objectids_to_strings
+
 
 class VehicleService:
     def __init__(self):
@@ -12,19 +14,34 @@ class VehicleService:
 
     async def get_vehicles(self):
         vehicles = list(self.collection.find())
-        return [Vehicle(**vehicle) for vehicle in vehicles]  # Convert to Vehicle model
+        return convert_objectids_to_strings(vehicles)
 
     async def create_vehicle(self, vehicle_request: VehicleCreateRequest):
         new_vehicle = vehicle_request.model_dump()
 
-        result = await self.collection.insert_one(new_vehicle)
+        # Check if a vehicle with the same make, model, year, and assigned driver already exists
+        existing_vehicle = self.collection.find_one(
+            {
+                "make": new_vehicle["make"],
+                "model": new_vehicle["model"],
+                "year": new_vehicle["year"],
+                "assigned_driver_id": new_vehicle["assigned_driver_id"],
+            }
+        )
+
+        if existing_vehicle:
+            raise HTTPException(status_code=400, detail="This vehicle already exists for the assigned driver.")
+
+        # If no existing vehicle found, proceed to insert the new vehicle
+        result = self.collection.insert_one(new_vehicle)
         if result.inserted_id:
             return {"message": "Vehicle created successfully", "vehicle_id": str(result.inserted_id)}
+
         raise HTTPException(status_code=500, detail="Failed to create vehicle")
 
     async def update_vehicle(self, vehicle_id: str, vehicle_request: VehicleUpdateRequest):
         update_data = vehicle_request.model_dump(exclude_unset=True)  # Only update provided fields
-        result = await self.collection.update_one({"_id": ObjectId(vehicle_id)}, {"$set": update_data})
+        result = self.collection.update_one({"_id": ObjectId(vehicle_id)}, {"$set": update_data})
 
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Vehicle not found or no update performed")
@@ -32,7 +49,7 @@ class VehicleService:
         return {"message": "Vehicle updated successfully"}
 
     async def delete_vehicle(self, vehicle_id: str):
-        result = await self.collection.delete_one({"_id": ObjectId(vehicle_id)})
+        result = self.collection.delete_one({"_id": ObjectId(vehicle_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Vehicle not found")
 
