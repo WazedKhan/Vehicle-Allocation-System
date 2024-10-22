@@ -1,5 +1,6 @@
 from pydantic import BaseModel, constr
 
+from typing import Optional
 from bson import ObjectId
 
 
@@ -10,9 +11,9 @@ class EmployeeCreateRequest(BaseModel):
 
 
 class EmployeeUpdateRequest(BaseModel):
-    name: str
-    role: str
-    driver: bool = False  # Optional field for update
+    name: Optional[str] = None
+    role: Optional[str] = None
+    driver: Optional[bool] = None  # Optional field for update
 
 
 # Helper function to convert MongoDB ObjectId to string

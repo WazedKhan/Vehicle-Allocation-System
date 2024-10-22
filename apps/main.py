@@ -3,13 +3,13 @@ from fastapi import FastAPI
 
 from apps.database.mongodb import check_mongodb_connection
 
-from apps.routers import allocation
-from apps.routers import employee
+from apps.routers import allocation, employee, driver
 
 app = FastAPI()
 
 app.include_router(allocation.router, prefix="/api/v1/allocation", tags=["allocation"])
 app.include_router(employee.router, prefix="/api/v1/employee", tags=["employee"])
+app.include_router(driver.router, prefix="/api/v1/driver", tags=["driver"])
 
 
 @app.get("/")
