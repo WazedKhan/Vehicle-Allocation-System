@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("")
 async def get_employees():
     collection = get_mongo_collection(DBCollections.EMPLOYEE)
-    employees = list(collection.find())
+    employees = list(collection.find({"driver": False}))
 
     # Convert ObjectIds to strings using the utility function
     employees = convert_objectids_to_strings(employees)

@@ -1,57 +1,43 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from datetime import date
-from apps.database.mongodb import get_mongo_collection
+from fastapi import APIRouter
+from typing import List
 from apps.models.allocation import Allocation
+from apps.services.allocation import AllocationService
 
 router = APIRouter()
 
-
-@router.post("")
-def create_allocation(allocation: Allocation):
-    collection = get_mongo_collection("allocations")
-
-    # Check if the vehicle is already allocated on the given date
-    existing_allocation = collection.find_one(
-        {"vehicle_id": allocation.vehicle_id, "allocation_date": allocation.allocation_date}
-    )
-
-    if existing_allocation:
-        raise HTTPException(status_code=400, detail="Vehicle already allocated for this date")
-
-    # Insert new allocation
-    allocation_data = allocation.model_dump()
-    collection.insert_one(allocation_data)
-    return {"message": "Allocation created successfully", "allocation": allocation_data}
+# Initialize the allocation service
+allocation_service = AllocationService()
 
 
-@router.get("")
-def get_all_allocations():
-    collection = get_mongo_collection("allocations")
-    allocations = list(collection.find())
-    return allocations
+# Create a new allocation
+@router.post("", response_model=dict)
+def create_allocation(allocation_request: Allocation):
+    result = allocation_service.create_allocation(allocation_request)
+    return result
 
 
-@router.put("/{allocation_id}")
-def update_allocation(allocation_id: str, updated_allocation: Allocation):
-    collection = get_mongo_collection("allocations")
-
-    # Fetch and update allocation
-    existing_allocation = collection.find_one({"_id": allocation_id})
-    if not existing_allocation:
-        raise HTTPException(status_code=404, detail="Allocation not found")
-
-    collection.update_one({"_id": allocation_id}, {"$set": updated_allocation.model_dump()})
-    return {"message": "Allocation updated successfully"}
+# Get all allocations
+@router.get("", response_model=List[Allocation])
+def get_allocations():
+    print("fucl:", allocation_service.get_allocations())
+    return allocation_service.get_allocations()
 
 
-@router.delete("/{allocation_id}")
+# Get a specific allocation by ID
+@router.get("/{allocation_id}", response_model=Allocation)
+def get_allocation_by_id(allocation_id: str):
+    return allocation_service.get_allocation_by_id(allocation_id)
+
+
+# Update an allocation
+@router.put("/{allocation_id}", response_model=dict)
+def update_allocation(allocation_id: str, allocation_request: Allocation):
+    result = allocation_service.update_allocation(allocation_id, allocation_request)
+    return result
+
+
+# Delete an allocation
+@router.delete("/{allocation_id}", response_model=dict)
 def delete_allocation(allocation_id: str):
-    collection = get_mongo_collection("allocations")
-
-    existing_allocation = collection.find_one({"_id": allocation_id})
-    if not existing_allocation:
-        raise HTTPException(status_code=404, detail="Allocation not found")
-
-    collection.delete_one({"_id": allocation_id})
-    return {"message": "Allocation deleted successfully"}
+    result = allocation_service.delete_allocation(allocation_id)
+    return result
