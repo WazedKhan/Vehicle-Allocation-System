@@ -20,7 +20,7 @@ def create_allocation(allocation: Allocation):
         raise HTTPException(status_code=400, detail="Vehicle already allocated for this date")
 
     # Insert new allocation
-    allocation_data = allocation.dict()
+    allocation_data = allocation.model_dump()
     collection.insert_one(allocation_data)
     return {"message": "Allocation created successfully", "allocation": allocation_data}
 
@@ -41,7 +41,7 @@ def update_allocation(allocation_id: str, updated_allocation: Allocation):
     if not existing_allocation:
         raise HTTPException(status_code=404, detail="Allocation not found")
 
-    collection.update_one({"_id": allocation_id}, {"$set": updated_allocation.dict()})
+    collection.update_one({"_id": allocation_id}, {"$set": updated_allocation.model_dump()})
     return {"message": "Allocation updated successfully"}
 
 
