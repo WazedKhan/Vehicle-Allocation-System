@@ -1,17 +1,12 @@
-from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException
-from pymongo.collection import Collection
+from pydantic import BaseModel, constr
+
 from bson import ObjectId
 
-# creating a collection constance to avoid misspell or wrong collection creation
-EMPLOYEE = "employees"
 
-
-# Employee Pydantic model
 class EmployeeCreateRequest(BaseModel):
-    name: str
-    role: str
-    driver: bool = False  # Optional field to indicate if the employee is a driver
+    name: constr(min_length=1, max_length=100)  # type: ignore
+    role: constr(min_length=1, max_length=50)  # type: ignore
+    driver: bool
 
 
 class EmployeeUpdateRequest(BaseModel):
