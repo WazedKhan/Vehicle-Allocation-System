@@ -1,6 +1,9 @@
 import os
 
 from pymongo import MongoClient
+from pymongo.collection import Collection
+
+from apps.database.config import DBCollections
 
 
 # Environment variable for MongoDB URL, or fallback to localhost
@@ -12,10 +15,17 @@ def get_mongo_client():
     return MongoClient(mongo_url)
 
 
-def get_mongo_collection(collection_name: str):
+def get_mongo_collection(collection_name: DBCollections) -> Collection:
+    # Get the MongoDB client and database
     client = get_mongo_client()
     db = client["vehicle_allocation_db"]
-    return db[collection_name]
+
+    # Check if the collection name is valid
+    if collection_name not in DBCollections:
+        raise ValueError(f"Invalid collection name: {collection_name}")
+
+    # Accessing the value of the Enum
+    return db[collection_name.value]
 
 
 def check_mongodb_connection():

@@ -1,30 +1,29 @@
-from pydantic import BaseModel
-from datetime import date
-
 from fastapi import APIRouter, HTTPException
 
 from apps.database.mongodb import get_mongo_collection
 
 from apps.models.employee import EmployeeCreateRequest, object_id_to_str
+from apps.utils.db_helpers import convert_objectids_to_strings
+
+from apps.database.config import DBCollections
 
 router = APIRouter()
 
 
 @router.get("")
 async def get_employees():
-    collection = get_mongo_collection("employees")
+    collection = get_mongo_collection(DBCollections.EMPLOYEE)
     employees = list(collection.find())
 
-    # Convert ObjectIds to strings
-    for employee in employees:
-        employee["_id"] = str(employee["_id"])  # Convert ObjectId to string
+    # Convert ObjectIds to strings using the utility function
+    employees = convert_objectids_to_strings(employees)
 
     return employees
 
 
 @router.post("")
 async def create_employee(employee_request: EmployeeCreateRequest):
-    collection = get_mongo_collection("employees")
+    collection = get_mongo_collection(DBCollections.EMPLOYEE)
 
     # Create a new employee document
     new_employee = {

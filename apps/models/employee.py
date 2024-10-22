@@ -3,6 +3,9 @@ from fastapi import APIRouter, HTTPException
 from pymongo.collection import Collection
 from bson import ObjectId
 
+# creating a collection constance to avoid misspell or wrong collection creation
+EMPLOYEE = "employees"
+
 
 # Employee Pydantic model
 class EmployeeCreateRequest(BaseModel):
