@@ -25,12 +25,8 @@ async def get_employees():
 async def create_employee(employee_request: EmployeeCreateRequest):
     collection = get_mongo_collection(DBCollections.EMPLOYEE)
 
-    # Create a new employee document
-    new_employee = {
-        "name": employee_request.name,
-        "role": employee_request.role,
-        "driver": employee_request.driver,
-    }
+    # Create a new employee document using the validated data
+    new_employee = employee_request.model_dump()
 
     # Insert into the collection
     result = collection.insert_one(new_employee)
