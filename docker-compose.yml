@@ -8,9 +8,7 @@ services:
     volumes:
       - .:/app  # This will allow live reloading during development
     environment:
-      MONGO_URL: mongodb://mongo:27017  # Use the internal MongoDB URL for service communication
-    # If you want to use your existing connection string, uncomment the line below:
-    # - MONGO_URL=mongodb+srv://wajed:lTOT32yLyrp7Zev0@cluster0.frdac.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      MONGO_URL: mongodb://mongo:27017
 
   mongo:
     image: mongo:latest
