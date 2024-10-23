@@ -1,0 +1,20 @@
+meta {
+  name: Create
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://127.0.0.1:8000/api/v1/allocation
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "employee_id": "6717edce01192f03e540d464",
+    "vehicle_id": "6718189d51fca87ddeee5906",
+    "allocation_date": "2024-10-25"
+  }
+  
+}

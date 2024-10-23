@@ -1,0 +1,21 @@
+meta {
+  name: Create
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://127.0.0.1:8000/api/v1/vehicle
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "make": "Toyota",
+    "model": "Camry",
+    "year": 2022,
+    "assigned_driver_id": "67180261e140ddcbe3cf68fa"
+  }
+  
+}
