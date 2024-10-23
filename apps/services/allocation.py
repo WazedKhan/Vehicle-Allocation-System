@@ -6,6 +6,9 @@ from apps.models.allocation import Allocation
 from apps.database.mongodb import get_mongo_collection
 from apps.database.config import DBCollections
 
+from apps.cache.redis_cache import RedisCache
+from apps.cache.cache_keys import VEHICLE_CACHE_KEY, EMPLOYEE_CACHE_KEY
+
 
 class AllocationService:
     def __init__(self):
@@ -13,46 +16,48 @@ class AllocationService:
         self.employee_collection = get_mongo_collection(DBCollections.EMPLOYEE)  # Employee/Driver collection
         self.vehicle_collection = get_mongo_collection(DBCollections.VEHICLE)  # Vehicle collection
 
+        # Initialize RedisCache
+        self.redis_cache = RedisCache()
+
     def create_allocation(self, allocation_request: Allocation):
-        # Convert vehicle_id to ObjectId if it's a string
         try:
             vehicle_id = ObjectId(allocation_request.vehicle_id)
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid vehicle ID format")
 
-        # Check if the vehicle exists
-        vehicle = self.vehicle_collection.find_one({"_id": vehicle_id})
+        vehicle_cache_key = f"{VEHICLE_CACHE_KEY}{vehicle_id}"
+        vehicle = self.redis_cache.get(vehicle_cache_key)
+
         if not vehicle:
-            raise HTTPException(status_code=404, detail="Vehicle not found")
+            vehicle = self.vehicle_collection.find_one({"_id": vehicle_id})
+            if vehicle:
+                self.redis_cache.set(vehicle_cache_key, vehicle)
+            else:
+                raise HTTPException(status_code=404, detail="Vehicle not found")
 
-        # Check if the same vehicle is already allocated to the same employee
-        existing_allocation = self.collection.find_one(
-            {"employee_id": allocation_request.employee_id, "vehicle_id": allocation_request.vehicle_id}
-        )
+        existing_allocation = self.collection.find_one({"vehicle_id": allocation_request.vehicle_id})
+        if existing_allocation and existing_allocation["employee_id"] != allocation_request.employee_id:
+            raise HTTPException(status_code=400, detail="Vehicle is already allocated to another employee.")
 
-        if existing_allocation:
+        if existing_allocation and existing_allocation["employee_id"] == allocation_request.employee_id:
             raise HTTPException(status_code=400, detail="Vehicle is already allocated to this employee.")
 
-        # Check if the same vehicle is already allocated to the same employee
-        existing_allocation = self.collection.find_one(
-            {"employee_id": allocation_request.employee_id, "vehicle_id": allocation_request.vehicle_id}
-        )
+        # check if employee already has a vehicle assigned to him
+        already_has_vehicle= self.collection.find_one({"employee_id": allocation_request.employee_id})
+        if already_has_vehicle:
+            raise HTTPException(status_code=400, detail="Another vehicle is already allocated to this employee.")
 
-        if existing_allocation:
-            raise HTTPException(status_code=400, detail="Vehicle is already allocated to this employee.")
-
-        # Convert allocation_date from date to datetime
-        new_allocation = allocation_request.dict()
+        new_allocation = allocation_request.model_dump()
         if isinstance(allocation_request.allocation_date, date):
             new_allocation["allocation_date"] = datetime.combine(
                 allocation_request.allocation_date, datetime.min.time()
             )
 
-        # Create the allocation in MongoDB
         result = self.collection.insert_one(new_allocation)
         if result.inserted_id:
             return {"message": "Allocation created successfully", "allocation_id": str(result.inserted_id)}
         raise HTTPException(status_code=500, detail="Failed to create allocation")
+
 
     def get_allocations(self):
         allocations = list(self.collection.find())
@@ -65,13 +70,20 @@ class AllocationService:
 
             # Convert ObjectId fields to strings
             allocation["_id"] = str(allocation["_id"])
-            allocation["employee_id"] = str(allocation["employee_id"])
-            allocation["vehicle_id"] = str(allocation["vehicle_id"])
 
-            # Fetch the vehicle details
-            vehicle = self.vehicle_collection.find_one({"_id": ObjectId(allocation["vehicle_id"])})
+            # Check Redis cache for the vehicle information
+            vehicle_cache_key = f"{VEHICLE_CACHE_KEY}{allocation['vehicle_id']}"
+            vehicle = self.redis_cache.get(vehicle_cache_key)
+
+            if not vehicle:
+                vehicle = self.vehicle_collection.find_one({"_id": ObjectId(allocation["vehicle_id"])})
+                if vehicle:
+                    self.redis_cache.set(vehicle_cache_key, vehicle)
+
+            # Add vehicle info to the allocation
             if vehicle:
                 allocation["vehicle_info"] = {
+                    "id": str(vehicle.get("_id")),
                     "make": vehicle.get("make"),
                     "model": vehicle.get("model"),
                     "year": vehicle.get("year"),
@@ -79,10 +91,19 @@ class AllocationService:
             else:
                 allocation["vehicle_info"] = None
 
-            # Fetch the employee/driver details
-            employee = self.employee_collection.find_one({"_id": ObjectId(allocation["employee_id"])})
+            # Check Redis cache for the employee information
+            employee_cache_key = f"{EMPLOYEE_CACHE_KEY}{allocation['employee_id']}"
+            employee = self.redis_cache.get(employee_cache_key)
+
+            if not employee:
+                employee = self.employee_collection.find_one({"_id": ObjectId(allocation["employee_id"])})
+                if employee:
+                    self.redis_cache.set(employee_cache_key, employee)
+
+            # Add employee info to the allocation
             if employee:
                 allocation["employee_info"] = {
+                    "id": str(employee.get("_id")),
                     "name": employee.get("name"),
                     "role": employee.get("role"),
                     "driver": employee.get("driver"),
@@ -112,11 +133,15 @@ class AllocationService:
             raise HTTPException(status_code=404, detail="Allocation not found")
 
         # Validate if the allocation date has already passed
-        if existing_allocation.get("allocation_date") < datetime.combine(date.today(), datetime.min.time()):
+        allocation_date = existing_allocation.get("allocation_date")
+        if isinstance(allocation_date, str):  # If it's a string, convert to datetime
+            allocation_date = datetime.fromisoformat(allocation_date)
+
+        if allocation_date < datetime.combine(date.today(), datetime.min.time()):
             raise HTTPException(status_code=400, detail="Cannot update allocation after the allocation date")
 
         # Convert allocation_date from date to datetime if necessary
-        update_data = allocation_request.dict()
+        update_data = allocation_request.model_dump()
         if isinstance(allocation_request.allocation_date, date):
             update_data["allocation_date"] = datetime.combine(allocation_request.allocation_date, datetime.min.time())
 
@@ -126,7 +151,7 @@ class AllocationService:
         if update_result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Allocation not found or no changes made")
 
-        return {"message": "Allocation updated successfully"}
+        return {"message": "Allocation updated successfully", "allocation_id": allocation_id}
 
     def delete_allocation(self, allocation_id: str):
         # Delete the allocation by ID

@@ -8,7 +8,10 @@ from apps.database.config import DBCollections
 
 # Environment variable for MongoDB URL, or fallback to localhost
 def get_mongo_client():
-    mongo_url = os.getenv("MONGO_URL")
+    mongo_url = os.getenv(
+            "MONGO_URL",
+            "mongodb+srv://wajed:lTOT32yLyrp7Zev0@cluster0.frdac.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+        )
     return MongoClient(mongo_url)
 
 

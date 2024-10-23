@@ -1,0 +1,19 @@
+meta {
+  name: Update
+  type: http
+  seq: 4
+}
+
+patch {
+  url: http://127.0.0.1:8000/api/v1/allocation/671896861250d873ce58fdef
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "employee_id": "6717edce01192f03e540d464",
+    "vehicle_id": "671893eb47867a11e095c0c7",
+    "allocation_date": "2024-10-25"
+  }
+}
