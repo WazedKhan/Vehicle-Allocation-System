@@ -4,15 +4,6 @@
 
 This project is an API collection that manages vehicle and employee allocations using FastAPI and MongoDB. It allows for the creation, retrieval, updating, and deletion of allocations.
 
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Getting Started with Docker](#getting-started-with-docker)
-- [API Endpoints](#api-endpoints)
-- [Allocation Functionality](#allocation-functionality)
-- [Running the Tests](#running-the-tests)
-- [License](#license)
-
 ## Prerequisites
 
 - Docker
@@ -33,9 +24,15 @@ Use the following command to build the Docker images:
 - ```docker-compose build```
 - ```docker-compose up```
 
-Running the Tests
-To run the tests, you can use the following command:
+## Access the Application
 
-```sh
-docker-compose exec app python -m unittest discover -s tests
-```
+Once the services are running, you can access the FastAPI application at http://localhost:8000.
+
+API Documentation
+
+The API documentation is available at http://localhost:8000/docs, where you can explore the endpoints and their functionality.
+
+## API Collection
+An API collection is provided in the project to help you test the endpoints. You can import it into your favorite API testing tool (like Postman) for easy exploration and testing of the API functionalities.
+POSTMAN API collection loc:
+- Vehicle-Allocation-System/API-Collections/postman_collection.json
