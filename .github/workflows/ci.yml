@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'  # Use the version of Python you're working with
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt  # Adjust this if your requirements are named differently
+
+      - name: Run tests
+        run: |
+          python -m unittest discover -s tests -p "*.py"  # Adjust the test directory as needed
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 .  # Adjust this based on your linting preferences

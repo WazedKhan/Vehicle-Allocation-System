@@ -17,9 +17,8 @@ def create_allocation(allocation_request: Allocation):
 
 
 # Get all allocations
-@router.get("", response_model=List[Allocation])
+@router.get("", response_model=list)
 def get_allocations():
-    print("fucl:", allocation_service.get_allocations())
     return allocation_service.get_allocations()
 
 
@@ -30,7 +29,7 @@ def get_allocation_by_id(allocation_id: str):
 
 
 # Update an allocation
-@router.put("/{allocation_id}", response_model=dict)
+@router.patch("/{allocation_id}", response_model=dict)
 def update_allocation(allocation_id: str, allocation_request: Allocation):
     result = allocation_service.update_allocation(allocation_id, allocation_request)
     return result
