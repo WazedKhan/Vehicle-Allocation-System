@@ -1,7 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from typing import List
-from apps.models.allocation import Allocation
-from apps.services.allocation import AllocationService
+from apps.models.allocation import Allocation, AllocationCreate
+from apps.services.allocation_src import AllocationService
 
 router = APIRouter()
 
@@ -11,15 +11,15 @@ allocation_service = AllocationService()
 
 # Create a new allocation
 @router.post("", response_model=dict)
-def create_allocation(allocation_request: Allocation):
+def create_allocation(allocation_request: AllocationCreate):
     result = allocation_service.create_allocation(allocation_request)
     return result
 
 
 # Get all allocations
 @router.get("", response_model=list)
-def get_allocations():
-    return allocation_service.get_allocations()
+def get_allocations(vehicle_model: str = Query(None, description="Filter allocations by vehicle model")):
+    return allocation_service.get_allocations(vehicle_model)
 
 
 # Get a specific allocation by ID
