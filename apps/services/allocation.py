@@ -43,7 +43,7 @@ class AllocationService:
             raise HTTPException(status_code=400, detail="Vehicle is already allocated to this employee.")
 
         # check if employee already has a vehicle assigned to him
-        already_has_vehicle= self.collection.find_one({"employee_id": allocation_request.employee_id})
+        already_has_vehicle = self.collection.find_one({"employee_id": allocation_request.employee_id})
         if already_has_vehicle:
             raise HTTPException(status_code=400, detail="Another vehicle is already allocated to this employee.")
 
@@ -57,7 +57,6 @@ class AllocationService:
         if result.inserted_id:
             return {"message": "Allocation created successfully", "allocation_id": str(result.inserted_id)}
         raise HTTPException(status_code=500, detail="Failed to create allocation")
-
 
     def get_allocations(self):
         allocations = list(self.collection.find())
